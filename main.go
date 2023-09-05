@@ -14,7 +14,47 @@ import (
 	"github.com/go-spatial/proj"
 	"github.com/paulmach/orb"
 	"github.com/paulmach/orb/geojson"
+
+	"send_position/geometry"
 )
+
+func PrintMatrix(matrix [][][2]float64) {
+	// Imprimir la cabecera de la matriz
+	fmt.Println("[")
+	// Imprimir los elementos de la matriz
+	for i := 0; i < len(matrix); i++ {
+		for j := 0; j < len(matrix[i]); j++ {
+			// Formatear el número con dos decimales
+			fmt.Printf("[ %.6f, %.6f ]", matrix[i][j][0], matrix[i][j][1])
+		}
+		fmt.Println()
+	}
+
+	// Imprimir el cierre de la matriz
+	fmt.Println("]")
+}
+
+// SubsampleVector toma una matriz de puntos de entrada y devuelve pares de puntos consecutivos
+func SubsampleVector(input [][]float64) [][][2]float64 {
+	// Verificar que haya al menos dos puntos en la entrada
+	if len(input) < 2 {
+		return nil
+	}
+
+	// Inicializar la matriz de salida
+	output := make([][][2]float64, len(input)-1)
+
+	// Crear pares de puntos consecutivos
+	for i := 0; i < len(input)-1; i++ {
+		pair := [][2]float64{
+			{input[i][0], input[i][1]},
+			{input[i+1][0], input[i+1][1]},
+		}
+		output[i] = pair
+	}
+
+	return output
+}
 
 func readFileIntoByteSlice(filename string) ([]byte, error) {
 	file, err := os.Open(filename)
@@ -122,6 +162,14 @@ func main() {
 		fmt.Printf("%.2f, %.2f\n", xy[0], xy[1])
 		inputVector[j] = xy
 	}
+
+	output := SubsampleVector(inputVector)
+	newpoints := geometry.GeneratePoints(output, 5)
+
+	outpuLonLat := geometry.ConverToLonLat(newpoints)
+	PrintMatrix(outpuLonLat)
+
+	//geometry.ExampleUsage()
 
 	// Crear una función para mapear las coordenadas a un objeto
 	result := make([]map[string]interface{}, len(coordinates))
