@@ -12,7 +12,9 @@
             "program": "${fileDirname}",
             "args": [
                 "trazado.json",
-                "arg2"
+                "InfoEntity.java",
+                "-out",
+                "aa.out"
             ]
         }
     ]
