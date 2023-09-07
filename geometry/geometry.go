@@ -2,16 +2,17 @@ package geometry
 
 import (
 	"fmt"
+	"math/rand"
 
 	"github.com/go-spatial/proj"
 )
 
 // GeneratePoints toma una matriz de pares de puntos y genera puntos entre ellos
-func GeneratePoints(input [][][2]float64, numSamples int) [][][2]float64 {
+func GeneratePoints(input [][][2]float64, numSamples int, randomizeFactor float64) [][][2]float64 {
 	output := make([][][2]float64, len(input))
 
 	for i, pair := range input {
-		points := GenerateLinePoints(pair[0], pair[1], numSamples)
+		points := GenerateLinePoints(pair[0], pair[1], numSamples, randomizeFactor)
 		output[i] = points
 	}
 
@@ -19,7 +20,7 @@ func GeneratePoints(input [][][2]float64, numSamples int) [][][2]float64 {
 }
 
 // GenerateLinePoints genera puntos a lo largo de una línea recta entre dos puntos
-func GenerateLinePoints(start, end [2]float64, numSamples int) [][2]float64 {
+func GenerateLinePoints(start, end [2]float64, numSamples int, randomizeFactor float64) [][2]float64 {
 	var points [][2]float64
 	m := (end[1] - start[1]) / (end[0] - start[0])
 	b := start[1] - m*start[0]
@@ -29,6 +30,11 @@ func GenerateLinePoints(start, end [2]float64, numSamples int) [][2]float64 {
 	for i := 0; i < numSamples; i++ {
 		x := start[0] + float64(i)*step
 		y := m*x + b
+
+		if randomizeFactor > 0 {
+			x += rand.Float64() * randomizeFactor
+			y += rand.Float64() * randomizeFactor
+		}
 		points = append(points, [2]float64{x, y})
 	}
 
@@ -36,18 +42,20 @@ func GenerateLinePoints(start, end [2]float64, numSamples int) [][2]float64 {
 }
 
 // ConvertLinePoints convierte cada punto de la linea un punto proyectado lon,lat
-func ConvertLinePoints(xy [2]float64 ) []float64 {
+func ConvertLinePoints(xy [2]float64) []float64 {
 	// var points []float64
 
 	var points = xy[:]
     
 	lonlat, err := proj.Inverse(proj.EPSG3395, points)
-		if err != nil {
-			panic(err)
-		}
+	if err != nil {
+		panic(err)
+	}
 
 	return lonlat
 }
+
+
 
 // ConvertToLonLat toma una matriz de coordenadas planas y devuelve su equivalente en coordenadas proyectadas lon,lat
 func ConverToLonLat(input [][][2]float64) [][][2]float64 {
@@ -79,7 +87,7 @@ func ExampleUsage() {
 
 	numSamples := 5
 
-	output := GeneratePoints(input, numSamples)
+	output := GeneratePoints(input, numSamples, 0.0)
 
 	fmt.Println(output)
 }

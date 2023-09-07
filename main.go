@@ -15,28 +15,6 @@ import (
 	"send_position/helpers"
 )
 
-// SubsampleVector toma una matriz de puntos de entrada y devuelve pares de puntos consecutivos
-func SubsampleVector(input [][]float64) [][][2]float64 {
-	// Verificar que haya al menos dos puntos en la entrada
-	if len(input) < 2 {
-		return nil
-	}
-
-	// Inicializar la matriz de salida
-	output := make([][][2]float64, len(input)-1)
-
-	// Crear pares de puntos consecutivos
-	for i := 0; i < len(input)-1; i++ {
-		pair := [][2]float64{
-			{input[i][0], input[i][1]},
-			{input[i+1][0], input[i+1][1]},
-		}
-		output[i] = pair
-	}
-
-	return output
-}
-
 func readFileIntoByteSlice(filename string) ([]byte, error) {
 	file, err := os.Open(filename)
 	if err != nil {
@@ -68,8 +46,9 @@ func main() {
 	ciclicoPtr := flag.Bool("ciclico", false, "procesar el geojson de forma ciclica")
     puntosPtr := flag.Int("puntos", 3, "numero de puntos por segmento de linea")
 	parametroPtr := flag.String("parametro", "", "parametro de la ruta http")
-	timePtr := flag.Int("tiempo", 2, "tiempo en segundos entre request sucesivos")
+	timePtr := flag.Int("pausa", 2000, "tiempo en mili-segundos entre request sucesivos")
     urlPtr  := flag.String("url", "", "url endpoint para envio de datos")
+	verbosePtr := flag.Bool("verbose", false, "verbose")
 	flag.Parse()
 	
 	if (*geojsonPtr == "") {
@@ -118,13 +97,15 @@ func main() {
     // procesando el archivo geojson
 	fmt.Println("Procesando archivo geojson...")
 	inputVector := helpers.ExtraeSegmentos(coordinates)
-	output := SubsampleVector(inputVector)
-	newpoints := geometry.GeneratePoints(output, *puntosPtr)
+	output := helpers.SubsampleVector(inputVector)
+	fmt.Printf("Subdividiendo segmentos...\n")
+	newpoints := geometry.GeneratePoints(output, *puntosPtr, 3.0)
+	fmt.Println("Total coordenadas a procesar: ", len(newpoints) * *puntosPtr)
 	outpuLonLat := geometry.ConverToLonLat(newpoints)
 	//helpers.PrintMatrix(outpuLonLat)
 
 	if *ciclicoPtr {
-	    fmt.Println("Procesando archivo geojson de forma ciclica...")
+	    fmt.Println("Enviando coordenadas de forma ciclica...")
 		iterator := helpers.NewCircularIterator(outpuLonLat)
 		// Ejemplo de uso en un ciclo infinito
 		for {
@@ -141,26 +122,27 @@ func main() {
 			result := helpers.CreatePoints(currentData)
 			// Iterar sobre result y enviar cada elemento a la función enviarPOST
 			for _, elem := range result {
-				if err := helpers.EnviarPOST(*urlPtr, elem); err != nil {
+				if err := helpers.EnviarPOST(*urlPtr, elem, *verbosePtr); err != nil {
 					fmt.Printf("Error al enviar el elemento: %v\n", err)
 				}
 				
-				// Esperar el tiempo configurado antes de la siguiente solicitud
-				time.Sleep(time.Duration(*timePtr) * time.Second)
+				// Sleep *timePtr milisegundos
+				time.Sleep(time.Duration(*timePtr) * time.Millisecond)
+
 			}
 		}
 	} else {
-		fmt.Println("Procesando archivo geojson de forma secuencial...")
+		fmt.Println("Enviando coordenadas de forma secuencial...")
 		result := helpers.CreateListOfPoints(outpuLonLat)
 
 		// Iterar sobre result y enviar cada elemento a la función enviarPOST
 		for _, elem := range result {
-			if err := helpers.EnviarPOST(*urlPtr, elem); err != nil {
+			if err := helpers.EnviarPOST(*urlPtr, elem, *verbosePtr); err != nil {
 				fmt.Printf("Error al enviar el elemento: %v\n", err)
 			}
 			
 			// Esperar el tiempo configurado antes de la siguiente solicitud
-			time.Sleep(time.Duration(*timePtr) * time.Second)
+			time.Sleep(time.Duration(*timePtr) * time.Millisecond)
 		}
 	}
 
