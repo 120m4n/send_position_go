@@ -1,9 +1,12 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
+	//"net/url"
 	"os"
+	//"path/filepath"
 	"time"
 
 	"github.com/go-spatial/proj"
@@ -13,7 +16,6 @@ import (
 	"send_position/geometry"
 	"send_position/helpers"
 )
-
 
 // SubsampleVector toma una matriz de puntos de entrada y devuelve pares de puntos consecutivos
 func SubsampleVector(input [][]float64) [][][2]float64 {
@@ -64,25 +66,31 @@ func readFileIntoByteSlice(filename string) ([]byte, error) {
 
 func main() {
 	// Verificar si se proporciona un argumento (ruta al archivo geojson)
-	if len(os.Args) != 2 {
-		fmt.Println("Uso: send_position <ruta_al_archivo_geojson>")
+	geojsonPtr := flag.String("json", "", "archivo geojson para procesar")
+	ciclicoPtr := flag.Bool("ciclico", false, "procesar el geojson de forma ciclica")
+    puntosPtr := flag.Int("puntos", 3, "numero de puntos por segmento de linea")
+	parametroPtr := flag.String("parametro", "", "parametro de la ruta http")
+	timePtr := flag.Int("tiempo", 2, "tiempo en segundos entre request sucesivos")
+    urlPtr  := flag.String("url", "", "url endpoint para envio de datos")
+	flag.Parse()
+	
+	if (*geojsonPtr == "") {
+		fmt.Println("Uso: send_position -json=<ruta_al_archivo_geojson>")
 		os.Exit(1)
-	}
-
-	// Obtener la ruta del archivo geojson del argumento de la línea de comandos
-	filePath := os.Args[1]
-
-	unique_id := "918422f729de0567"
+	} 
 
 	// URL del servidor donde realizar la solicitud POST
-	url := os.Getenv("url_endpoint") + unique_id // Reemplaza esto con tu URL real
-
-	// Configurar el tiempo de espera en segundos
-	tiempoEspera := 2 // Cambia esto al tiempo de espera deseado en segundos
-
+	if *urlPtr == "" {
+		fmt.Println("Uso: send_position -json=<ruta_al_archivo_geojson> -url=http://localhost:3000")
+		os.Exit(1)
+	}
+	
+	if *parametroPtr != "" {  
+       *urlPtr = *urlPtr + *parametroPtr
+	} 
 
 	// Leer el archivo geojson
-	rawJSON, err := readFileIntoByteSlice(filePath)
+	rawJSON, err := readFileIntoByteSlice(*geojsonPtr)
 	if err != nil {
 		log.Fatalf("Error al leer el archivo geojson: %v", err)
 	}
@@ -109,29 +117,49 @@ func main() {
 
 
 	output := SubsampleVector(inputVector)
-	newpoints := geometry.GeneratePoints(output, 15)
+	newpoints := geometry.GeneratePoints(output, *puntosPtr)
 
 	outpuLonLat := geometry.ConverToLonLat(newpoints)
-	helpers.PrintMatrix(outpuLonLat)
+	//helpers.PrintMatrix(outpuLonLat)
 
-	result := helpers.CreateListOfPoints(outpuLonLat)
+	if *ciclicoPtr {
+	
+		iterator := helpers.NewCircularIterator(outpuLonLat)
+		// Ejemplo de uso en un ciclo infinito
+		for {
+			currentData := iterator.Next()
+			if currentData == nil {
+				break // Salir del ciclo si no hay datos
+			}
 
-	// Convertir el resultado a JSON y mostrarlo
-	// jsonData, err := json.Marshal(result)
-	// if err != nil {
-	//     log.Fatalf("Error al convertir el resultado a JSON: %v", err)
-	// }
-
-	// fmt.Println(string(jsonData))
-
-	// Iterar sobre result y enviar cada elemento a la función enviarPOST
-	for _, elem := range result {
-		if err := helpers.EnviarPOST(url, elem); err != nil {
-			fmt.Printf("Error al enviar el elemento: %v\n", err)
+			// Procesar los datos actuales
+			// for _, pair := range currentData {
+			// 	fmt.Printf("(%f, %f) ", pair[0], pair[1])
+			// }
+			// fmt.Println()
+			result := helpers.CreatePoints(currentData)
+			// Iterar sobre result y enviar cada elemento a la función enviarPOST
+			for _, elem := range result {
+				if err := helpers.EnviarPOST(*urlPtr, elem); err != nil {
+					fmt.Printf("Error al enviar el elemento: %v\n", err)
+				}
+				
+				// Esperar el tiempo configurado antes de la siguiente solicitud
+				time.Sleep(time.Duration(*timePtr) * time.Second)
+			}
 		}
-		
-		// Esperar el tiempo configurado antes de la siguiente solicitud
-		time.Sleep(time.Duration(tiempoEspera) * time.Second)
+	} else {
+		result := helpers.CreateListOfPoints(outpuLonLat)
+
+		// Iterar sobre result y enviar cada elemento a la función enviarPOST
+		for _, elem := range result {
+			if err := helpers.EnviarPOST(*urlPtr, elem); err != nil {
+				fmt.Printf("Error al enviar el elemento: %v\n", err)
+			}
+			
+			// Esperar el tiempo configurado antes de la siguiente solicitud
+			time.Sleep(time.Duration(*timePtr) * time.Second)
+		}
 	}
 
 }

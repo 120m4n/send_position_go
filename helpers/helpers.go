@@ -8,7 +8,27 @@ import (
 	"net/http"
 )
 
-//
+func CreatePoints(input [][2]float64) []map[string]interface{} {
+	output := make([]map[string]interface{}, 0)
+
+	for _, pair := range input {
+		lat := pair[1]
+		lon := pair[0]
+
+		obj := map[string]interface{}{
+			"position": map[string]float64{
+				"lat": lat,
+				"lon": lon,
+			},
+			"fleet":  "camioneta",
+			"userid": "G2012/roman",
+		}
+		output = append(output, obj)
+	}
+	
+	return output	
+}
+
 // CreateListOfPoints Crea una lista que mapea las coordenadas a un objeto
 func CreateListOfPoints(input [][][2]float64) []map[string]interface{} {
 	output := make([]map[string]interface{}, 0)

@@ -1,0 +1,1 @@
+./send_position -json=trazado.json -url=http://localhost:3000 -parametro=918422f729de0567 -puntos=13 -ciclico=true
