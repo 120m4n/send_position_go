@@ -6,6 +6,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+
+	"github.com/go-spatial/proj"
+	"github.com/paulmach/orb"
 )
 
 func CreatePoints(input [][2]float64) []map[string]interface{} {
@@ -99,4 +102,24 @@ func PrintMatrix(matrix [][][2]float64) {
 
 	// Imprimir el cierre de la matriz
 	fmt.Println("]")
+}
+
+//create a function that take a orb.linestring and return the numbers of segments
+func GetSegmentCount(coordinates orb.LineString) int {
+	return len(coordinates) - 1
+}
+
+// ExtraeSegmentos devuelve los segmentos de linea de cada tramo de un LineString
+func ExtraeSegmentos(coordinates orb.LineString) [][]float64 {
+	outputVector := make([][]float64, len(coordinates))
+	for j, coor := range coordinates {
+		var lonlat = []float64{coor.Lon(), coor.Lat()}
+		xy, err := proj.Convert(proj.EPSG3395, lonlat)
+		if err != nil {
+			panic(err)
+		}
+
+		outputVector[j] = xy
+	}
+	return outputVector
 }

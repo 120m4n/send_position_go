@@ -4,12 +4,10 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	//"net/url"
 	"os"
-	//"path/filepath"
 	"time"
 
-	"github.com/go-spatial/proj"
+
 	"github.com/paulmach/orb"
 	"github.com/paulmach/orb/geojson"
 
@@ -90,40 +88,43 @@ func main() {
 	} 
 
 	// Leer el archivo geojson
+	fmt.Println("Leer archivo geojson...")
 	rawJSON, err := readFileIntoByteSlice(*geojsonPtr)
 	if err != nil {
 		log.Fatalf("Error al leer el archivo geojson: %v", err)
 	}
 
 	// Parsear el archivo geojson
+	fmt.Println("Parsear archivo geojson...")
 	feature, err := geojson.UnmarshalFeatureCollection(rawJSON)
 	if err != nil {
 		log.Fatalf("Error al parsear el archivo geojson: %v", err)
 	}
 
 	// Verificar si la feature es del tipo LineString
+	fmt.Println("Verificar si la feature es del tipo LineString...")
 	if feature.Features[0].Geometry.GeoJSONType() != geojson.TypeLineString {
 		fmt.Println("El archivo geojson no contiene un elemento LineString")
 		os.Exit(1)
 	}
 
-	// temp := feature.Features[0].Geometry.GeoJSONType()
-	// fmt.Println(string(temp))
+	//Contar el numero de segmentos en el LineString
+	segmentCount := helpers.GetSegmentCount(feature.Features[0].Geometry.(orb.LineString))
+	fmt.Printf("Numero de segmentos encontrados: %d\n", segmentCount)
 
 	// Obtener las coordenadas del LineString
+	fmt.Println("Obtener las coordenadas del LineString...")
 	coordinates := feature.Features[0].Geometry.(orb.LineString)
-    // fmt.Printf("%.2f, %.2f\n", xy[0], xy[1])
-    inputVector := ExtraeSegmentos(coordinates)
-
-
+    // procesando el archivo geojson
+	fmt.Println("Procesando archivo geojson...")
+	inputVector := helpers.ExtraeSegmentos(coordinates)
 	output := SubsampleVector(inputVector)
 	newpoints := geometry.GeneratePoints(output, *puntosPtr)
-
 	outpuLonLat := geometry.ConverToLonLat(newpoints)
 	//helpers.PrintMatrix(outpuLonLat)
 
 	if *ciclicoPtr {
-	
+	    fmt.Println("Procesando archivo geojson de forma ciclica...")
 		iterator := helpers.NewCircularIterator(outpuLonLat)
 		// Ejemplo de uso en un ciclo infinito
 		for {
@@ -149,6 +150,7 @@ func main() {
 			}
 		}
 	} else {
+		fmt.Println("Procesando archivo geojson de forma secuencial...")
 		result := helpers.CreateListOfPoints(outpuLonLat)
 
 		// Iterar sobre result y enviar cada elemento a la función enviarPOST
@@ -163,17 +165,4 @@ func main() {
 	}
 
 }
-// ExtraeSegmentos devuelve los segmentos de linea de cada tramo de un LineString
-func ExtraeSegmentos(coordinates orb.LineString) [][]float64 {
-	outputVector := make([][]float64, len(coordinates))
-	for j, coor := range coordinates {
-		var lonlat = []float64{coor.Lon(), coor.Lat()}
-		xy, err := proj.Convert(proj.EPSG3395, lonlat)
-		if err != nil {
-			panic(err)
-		}
 
-		outputVector[j] = xy
-	}
-	return outputVector
-}
