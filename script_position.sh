@@ -1,1 +1,1 @@
-./send_position -json=trazado.json -url=http://localhost:3000 -parametro=918422f729de0567 -puntos=13 -ciclico=true
+./send_position -json=trazado.json -url=https://realtime.mapas-electrosoftware.xyz/api/coordinates -parametro=918422f729de0567 -puntos=13 -ciclico=true

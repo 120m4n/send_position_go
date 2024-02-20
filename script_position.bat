@@ -1,0 +1,1 @@
+start "enviar posicion" send_position.exe -json=trazado.json -url=https://realtime.mapas-electrosoftware.xyz/api/coordinates/ -parametro=918422f729de0348 -puntos=13 -ciclico=true -verbose=true

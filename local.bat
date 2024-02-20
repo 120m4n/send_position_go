@@ -1,0 +1,1 @@
+start "enviar posicion" send_position.exe -json=trazado.json -url=http://localhost:26586/api/coordinates/ -parametro=918422f729de0348 -puntos=13 -ciclico=true -verbose=true
