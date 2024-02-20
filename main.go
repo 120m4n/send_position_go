@@ -7,12 +7,12 @@ import (
 	"os"
 	"time"
 
-
 	"github.com/paulmach/orb"
 	"github.com/paulmach/orb/geojson"
 
 	"send_position/geometry"
 	"send_position/helpers"
+	"send_position/singleton"
 )
 
 func readFileIntoByteSlice(filename string) ([]byte, error) {
@@ -41,13 +41,15 @@ func readFileIntoByteSlice(filename string) ([]byte, error) {
 
 
 func main() {
-	// Verificar si se proporciona un argumento (ruta al archivo geojson)
-	geojsonPtr := flag.String("json", "", "archivo geojson para procesar")
+
 	ciclicoPtr := flag.Bool("ciclico", false, "procesar el geojson de forma ciclica")
+	fleetPtr := flag.String("fleet", "", "avatar")
+	geojsonPtr := flag.String("json", "", "archivo geojson para procesar")
     puntosPtr := flag.Int("puntos", 3, "numero de puntos por segmento de linea")
 	parametroPtr := flag.String("parametro", "", "parametro de la ruta http")
 	timePtr := flag.Int("pausa", 2000, "tiempo en mili-segundos entre request sucesivos")
     urlPtr  := flag.String("url", "", "url endpoint para envio de datos")
+	useridPtr := flag.String("userid", "", "Ggoland/roman")
 	verbosePtr := flag.Bool("verbose", false, "verbose")
 	flag.Parse()
 	
@@ -65,6 +67,10 @@ func main() {
 	if *parametroPtr != "" {  
        *urlPtr = *urlPtr + *parametroPtr
 	} 
+
+	s := singleton.GetInstance()
+	s.SetFleet(*fleetPtr)
+	s.SetUserid(*useridPtr)
 
 	// Leer el archivo geojson
 	fmt.Println("Leer archivo geojson...")

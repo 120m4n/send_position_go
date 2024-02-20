@@ -1,1 +1,0 @@
-./send_position -json=trazado.json -url=https://realtime.mapas-electrosoftware.xyz/api/coordinates -parametro=918422f729de0567 -puntos=13 -ciclico=true

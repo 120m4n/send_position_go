@@ -1,0 +1,1 @@
+./send_position -json=trazado_1.json -url=https://realtime.mapas-electrosoftware.xyz/api/coordinates/ -parametro=918422f729de0567 -puntos=13 -ciclico=true -fleet=avatar -userid=Gtest/test -verbose=true

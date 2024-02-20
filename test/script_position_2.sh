@@ -1,0 +1,1 @@
+./send_position -json=trazado_2.json -url=https://realtime.mapas-electrosoftware.xyz/api/coordinates/ -parametro=918422f729de0348 -puntos=27 -ciclico=true -fleet=camioneta -userid=Gtest/test2

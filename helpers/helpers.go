@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"send_position/singleton"
 
 	"net/http"
 	//"time"
@@ -16,6 +17,8 @@ import (
 func CreatePoints(input [][2]float64) []map[string]interface{} {
 	output := make([]map[string]interface{}, 0)
 
+	s := singleton.GetInstance()
+
 	for _, pair := range input {
 		lat := pair[1]
 		lon := pair[0]
@@ -25,8 +28,8 @@ func CreatePoints(input [][2]float64) []map[string]interface{} {
 				"lat": lat,
 				"lon": lon,
 			},
-			"fleet":  "camioneta",
-			"userid": "G2012/roman",
+			"fleet":  s.Fleet,
+			"userid": s.Userid,
 		}
 		output = append(output, obj)
 	}
