@@ -24,12 +24,13 @@ func CreatePoints(input [][2]float64) []map[string]interface{} {
 		lon := pair[0]
 
 		obj := map[string]interface{}{
-			"position": map[string]float64{
-				"lat": lat,
-				"lon": lon,
+			"coordinates": map[string]float64{
+				"latitude": lat,
+				"longitude": lon,
 			},
 			"fleet":  s.Fleet,
-			"userid": s.Userid,
+			"user_id": s.Userid,
+			"type_fleet": "camioneta",
 		}
 		output = append(output, obj)
 	}
@@ -47,12 +48,13 @@ func CreateListOfPoints(input [][][2]float64) []map[string]interface{} {
 			lon := pair[0]
 
 			obj := map[string]interface{}{
-				"position": map[string]float64{
-					"lat": lat,
-					"lon": lon,
+				"coordinates": map[string]float64{
+					"latitude": lat,
+					"longitude": lon,
 				},
-				"fleet":  "camioneta",
-				"userid": "G2012/roman",
+				"fleet":  "sigcom",
+				"user_id": "G2012/roman",
+				"type_fleet": "camioneta",
 			}
 			output = append(output, obj)
 		}
@@ -83,8 +85,8 @@ func EnviarPOST(url string, obj map[string]interface{}, verbose bool) error {
 	}
 
 	// Verificar el código de estado de la respuesta
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("respuesta del servidor: %s", resp.Status)
+	if resp.StatusCode < 200 || resp.StatusCode > 299 {
+		return fmt.Errorf("respuesta del servidor: %s , %s", resp.Status, respData)
 	}
 
 	// Imprimir el resultado del servidor
