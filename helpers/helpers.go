@@ -30,7 +30,7 @@ func CreatePoints(input [][2]float64) []map[string]interface{} {
 			},
 			"fleet":  s.Fleet,
 			"user_id": s.Userid,
-			"type_fleet": "camioneta",
+			"fleet_type": "camioneta",
 		}
 		output = append(output, obj)
 	}
@@ -55,7 +55,7 @@ func CreateListOfPoints(input [][][2]float64) []map[string]interface{} {
 				},
 				"fleet":  s.Fleet,
 				"user_id": s.Userid,
-				"type_fleet": "camioneta",
+				"fleet_type": "camioneta",
 			}
 			output = append(output, obj)
 		}
