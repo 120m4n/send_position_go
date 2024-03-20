@@ -68,6 +68,10 @@ func main() {
        *urlPtr = *urlPtr + *parametroPtr
 	} 
 
+	if *useridPtr == "" {
+		*useridPtr = "Ggoland"
+	}
+
 	s := singleton.GetInstance()
 	s.SetFleet(*fleetPtr)
 	s.SetUserid(*useridPtr)

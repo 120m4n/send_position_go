@@ -40,7 +40,8 @@ func CreatePoints(input [][2]float64) []map[string]interface{} {
 // CreateListOfPoints Crea una lista que mapea las coordenadas a un objeto
 func CreateListOfPoints(input [][][2]float64) []map[string]interface{} {
 	output := make([]map[string]interface{}, 0)
-
+	s := singleton.GetInstance()
+	
 	for _, fila := range input {
 		for _, pair := range fila {
 			lat := pair[1]
@@ -51,8 +52,8 @@ func CreateListOfPoints(input [][][2]float64) []map[string]interface{} {
 					"lat": lat,
 					"lon": lon,
 				},
-				"fleet":  "camioneta",
-				"userid": "G2012/roman",
+				"fleet":  s.Fleet,
+				"user_id": s.Userid,
 			}
 			output = append(output, obj)
 		}

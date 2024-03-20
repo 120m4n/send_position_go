@@ -11,10 +11,12 @@
             "mode": "auto",
             "program": "${fileDirname}",
             "args": [
-                "-json=trazado.json",
-                "-url=https://realtime.mapas-electrosoftware.xyz/api/coordinates/",
+                "-json=./test/trazado_1.json",
+                "-url=http://localhost:3002/insert-coordinates/",
                 "-parametro=918422f729de0567",
-                "-pausa=500",
+                "-fleet=avatar",
+                "-userid=G12/mac",
+                "-pausa=3000",
                 "-ciclico=false",
                 "-verbose=true",
                 "-puntos=67"
