@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/paulmach/orb"
@@ -62,6 +63,10 @@ func main() {
 	if *urlPtr == "" {
 		fmt.Println("Uso: send_position -json=<ruta_al_archivo_geojson> -url=http://localhost:3000")
 		os.Exit(1)
+	} else {
+		if !strings.HasSuffix(*urlPtr, "/") {
+			*urlPtr += "/"
+		}
 	}
 	
 	if *parametroPtr != "" {  
@@ -70,6 +75,10 @@ func main() {
 
 	if *useridPtr == "" {
 		*useridPtr = "Ggoland"
+	}
+
+	if *fleetPtr == "" {
+		*fleetPtr = "avatar"
 	}
 
 	s := singleton.GetInstance()
