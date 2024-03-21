@@ -1,9 +1,13 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -17,26 +21,7 @@ import (
 )
 
 func readFileIntoByteSlice(filename string) ([]byte, error) {
-	file, err := os.Open(filename)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-
-	fileInfo, err := file.Stat()
-	if err != nil {
-		return nil, err
-	}
-
-	fileSize := fileInfo.Size()
-	buffer := make([]byte, fileSize)
-
-	_, err = file.Read(buffer)
-	if err != nil {
-		return nil, err
-	}
-
-	return buffer, nil
+    return ioutil.ReadFile(filename)
 }
 
 
@@ -60,14 +45,18 @@ func main() {
 	} 
 
 	// URL del servidor donde realizar la solicitud POST
-	if *urlPtr == "" {
-		fmt.Println("Uso: send_position -json=<ruta_al_archivo_geojson> -url=http://localhost:3000")
-		os.Exit(1)
-	} else {
-		if !strings.HasSuffix(*urlPtr, "/") {
-			*urlPtr += "/"
-		}
-	}
+    if *urlPtr == "" {
+        log.Fatal("Uso: send_position -json=<ruta_al_archivo_geojson> -url=http://localhost:3000")
+    } else {
+        u, err := url.Parse(*urlPtr)
+        if err != nil {
+            log.Fatalf("Error parsing URL: %v", err)
+        }
+        if !strings.HasSuffix(u.Path, "/") {
+            u.Path += "/"
+        }
+        *urlPtr = u.String()
+    }
 	
 	if *parametroPtr != "" {  
        *urlPtr = *urlPtr + *parametroPtr
@@ -140,14 +129,25 @@ func main() {
 			// fmt.Println()
 			result := helpers.CreatePoints(currentData)
 			// Iterar sobre result y enviar cada elemento a la función enviarPOST
+			ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+			defer cancel()
 			for _, elem := range result {
-				if err := helpers.EnviarPOST(*urlPtr, elem, *verbosePtr); err != nil {
-					fmt.Printf("Error al enviar el elemento: %v\n", err)
+				err := helpers.EnviarPOST(ctx, *urlPtr, elem, *verbosePtr)
+				if err != nil {
+					if errors.Is(err, context.DeadlineExceeded) {
+						log.Println("Request timed out, retrying with a longer deadline...")
+						// Retry with a longer deadline
+						ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+						defer cancel()
+						err = helpers.EnviarPOST(ctx, *urlPtr, elem, *verbosePtr)
+					}
+					if err != nil {
+						log.Printf("Error al enviar el elemento: %v\n", err)
+					}
 				}
-				
-				// Sleep *timePtr milisegundos
-				time.Sleep(time.Duration(*timePtr) * time.Millisecond)
 
+				// Esperar el tiempo configurado antes de la siguiente solicitud
+				time.Sleep(time.Duration(*timePtr) * time.Millisecond)
 			}
 		}
 	} else {
@@ -155,11 +155,23 @@ func main() {
 		result := helpers.CreateListOfPoints(outpuLonLat)
 
 		// Iterar sobre result y enviar cada elemento a la función enviarPOST
+		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+		defer cancel()
 		for _, elem := range result {
-			if err := helpers.EnviarPOST(*urlPtr, elem, *verbosePtr); err != nil {
-				fmt.Printf("Error al enviar el elemento: %v\n", err)
+			err := helpers.EnviarPOST(ctx, *urlPtr, elem, *verbosePtr)
+			if err != nil {
+				if errors.Is(err, context.DeadlineExceeded) {
+					log.Println("Request timed out, retrying with a longer deadline...")
+					// Retry with a longer deadline
+					ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+					defer cancel()
+					err = helpers.EnviarPOST(ctx, *urlPtr, elem, *verbosePtr)
+				}
+				if err != nil {
+					log.Printf("Error al enviar el elemento: %v\n", err)
+				}
 			}
-			
+
 			// Esperar el tiempo configurado antes de la siguiente solicitud
 			time.Sleep(time.Duration(*timePtr) * time.Millisecond)
 		}

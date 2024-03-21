@@ -12,11 +12,11 @@
             "program": "${fileDirname}",
             "args": [
                 "-json=./test/trazado_1.json",
-                "-url=http://198.58.115.96:3002/insert-coordinates/",
+                "-url=http://geofences.mapas-electrosoftware.xyz/insert-coordinates/",
                 "-parametro=918422f729de0567",
                 "-fleet=avatar",
                 "-userid=G12/mac",
-                "-pausa=3000",
+                "-pausa=5000",
                 "-ciclico=false",
                 "-verbose=true",
                 "-puntos=67"

@@ -1,0 +1,2 @@
+@echo off
+send_position.exe -json=trazado_1.json -url=https://geofences.mapas-electrosoftware.xyz/insert-coordinates/ -parametro=918422f729de0348 -userid=G0/avatar_1 -puntos=23 -ciclico=false -pausa=5000 -verbose=false

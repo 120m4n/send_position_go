@@ -2,6 +2,7 @@ package helpers
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -64,16 +65,23 @@ func CreateListOfPoints(input [][][2]float64) []map[string]interface{} {
 	return output
 }
 
-// enviarPOST toma elementos de un vector y los envia a un endpoint
-func EnviarPOST(url string, obj map[string]interface{}, verbose bool) error {
+func EnviarPOST(ctx context.Context, url string, obj map[string]interface{}, verbose bool) error {
 	// Codificar el objeto en formato JSON
 	jsonData, err := json.Marshal(obj)
 	if err != nil {
 		return err
 	}
 
+	// Crear una nueva solicitud POST
+	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+
 	// Realizar la solicitud POST
-	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
+	client := &http.Client{}
+	resp, err := client.Do(req)
 	if err != nil {
 		return err
 	}
