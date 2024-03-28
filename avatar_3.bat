@@ -1,2 +1,2 @@
 @echo off
-send_position.exe -json=trazado_3.json -url=https://geofences.mapas-electrosoftware.xyz/insert-coordinates/ -parametro=fe03422f729 -userid=G0/avatar_3 -puntos=23 -ciclico=false -pausa=5000 -verbose=false
+send_position.exe -url=http://localhost:3002/coordinates -userid=G0/avatar_3 -json=trazado_3.json -puntos=13 -ciclico=false -pausa=1000 -verbose=false

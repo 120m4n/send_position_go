@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/paulmach/orb"
 	"github.com/paulmach/orb/geojson"
 
@@ -32,7 +33,7 @@ func main() {
 	fleetPtr := flag.String("fleet", "", "avatar")
 	geojsonPtr := flag.String("json", "", "archivo geojson para procesar")
     puntosPtr := flag.Int("puntos", 3, "numero de puntos por segmento de linea")
-	parametroPtr := flag.String("parametro", "", "parametro de la ruta http")
+	uniqueidPtr := flag.String("uniqueid", "", "identificacion unica del usuario")
 	timePtr := flag.Int("pausa", 2000, "tiempo en mili-segundos entre request sucesivos")
     urlPtr  := flag.String("url", "", "url endpoint para envio de datos")
 	useridPtr := flag.String("userid", "", "Ggoland/roman")
@@ -52,15 +53,17 @@ func main() {
         if err != nil {
             log.Fatalf("Error parsing URL: %v", err)
         }
-        if !strings.HasSuffix(u.Path, "/") {
-            u.Path += "/"
-        }
+        // if !strings.HasSuffix(u.Path, "/") {
+        //     u.Path += "/"
+        // }
         *urlPtr = u.String()
     }
 	
-	if *parametroPtr != "" {  
-       *urlPtr = *urlPtr + *parametroPtr
-	} 
+	if *uniqueidPtr == "" {
+		uuidWithHyphen := uuid.New()
+		uuid := strings.Replace(uuidWithHyphen.String(), "-", "", -1)
+		*uniqueidPtr = uuid
+	}
 
 	if *useridPtr == "" {
 		*useridPtr = "Ggoland"
@@ -73,6 +76,7 @@ func main() {
 	s := singleton.GetInstance()
 	s.SetFleet(*fleetPtr)
 	s.SetUserid(*useridPtr)
+	s.SetUniqueid(*uniqueidPtr)
 
 	// Leer el archivo geojson
 	fmt.Println("Leer archivo geojson...")
@@ -129,19 +133,12 @@ func main() {
 			// fmt.Println()
 			result := helpers.CreatePoints(currentData)
 			// Iterar sobre result y enviar cada elemento a la función enviarPOST
-			ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
-			defer cancel()
 			for _, elem := range result {
-				err := helpers.EnviarPOST(ctx, *urlPtr, elem, *verbosePtr)
+				err := helpers.EnviarPOST(*urlPtr, elem, *verbosePtr)
 				if err != nil {
 					if errors.Is(err, context.DeadlineExceeded) {
 						log.Println("Request timed out, retrying with a longer deadline...")
-						// Retry with a longer deadline
-						ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-						defer cancel()
-						err = helpers.EnviarPOST(ctx, *urlPtr, elem, *verbosePtr)
-					}
-					if err != nil {
+					} else {
 						log.Printf("Error al enviar el elemento: %v\n", err)
 					}
 				}
@@ -155,19 +152,13 @@ func main() {
 		result := helpers.CreateListOfPoints(outpuLonLat)
 
 		// Iterar sobre result y enviar cada elemento a la función enviarPOST
-		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
-		defer cancel()
+
 		for _, elem := range result {
-			err := helpers.EnviarPOST(ctx, *urlPtr, elem, *verbosePtr)
+			err := helpers.EnviarPOST(*urlPtr, elem, *verbosePtr)
 			if err != nil {
 				if errors.Is(err, context.DeadlineExceeded) {
 					log.Println("Request timed out, retrying with a longer deadline...")
-					// Retry with a longer deadline
-					ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-					defer cancel()
-					err = helpers.EnviarPOST(ctx, *urlPtr, elem, *verbosePtr)
-				}
-				if err != nil {
+				} else {
 					log.Printf("Error al enviar el elemento: %v\n", err)
 				}
 			}

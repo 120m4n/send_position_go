@@ -5,6 +5,7 @@ var instance *Singleton
 type Singleton struct {
 	Fleet  string
 	Userid string
+	Uniqueid string
 }
 
 func GetInstance() *Singleton {
@@ -20,4 +21,8 @@ func (s *Singleton) SetFleet(fleet string) {
 
 func (s *Singleton) SetUserid(userid string) {
 	s.Userid = userid
+}
+
+func (s *Singleton) SetUniqueid(uniqueid string) {
+	s.Uniqueid = uniqueid
 }

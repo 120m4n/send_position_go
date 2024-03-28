@@ -8,5 +8,6 @@ require (
 )
 
 require (
+	github.com/google/uuid v1.6.0
 	github.com/paulmach/orb v0.10.0
 )

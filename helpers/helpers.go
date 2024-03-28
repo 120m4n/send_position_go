@@ -2,10 +2,12 @@ package helpers
 
 import (
 	"bytes"
-	"context"
+	// "context"
 	"encoding/json"
 	"fmt"
-	"io"
+	// "io"
+	"io/ioutil"
+	"log"
 	"send_position/singleton"
 
 	"net/http"
@@ -31,6 +33,7 @@ func CreatePoints(input [][2]float64) []map[string]interface{} {
 			},
 			"fleet":  s.Fleet,
 			"user_id": s.Userid,
+			"unique_id": s.Uniqueid,
 			"fleet_type": "camioneta",
 		}
 		output = append(output, obj)
@@ -56,6 +59,7 @@ func CreateListOfPoints(input [][][2]float64) []map[string]interface{} {
 				},
 				"fleet":  s.Fleet,
 				"user_id": s.Userid,
+				"unique_id": s.Uniqueid,
 				"fleet_type": "camioneta",
 			}
 			output = append(output, obj)
@@ -65,7 +69,7 @@ func CreateListOfPoints(input [][][2]float64) []map[string]interface{} {
 	return output
 }
 
-func EnviarPOST(ctx context.Context, url string, obj map[string]interface{}, verbose bool) error {
+func EnviarPOST(url string, obj map[string]interface{}, verbose bool) error {
 	// Codificar el objeto en formato JSON
 	jsonData, err := json.Marshal(obj)
 	if err != nil {
@@ -73,34 +77,25 @@ func EnviarPOST(ctx context.Context, url string, obj map[string]interface{}, ver
 	}
 
 	// Crear una nueva solicitud POST
-	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(jsonData))
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
 	if err != nil {
-		return err
-	}
-	req.Header.Set("Content-Type", "application/json")
-
-	// Realizar la solicitud POST
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return err
+		log.Fatalf("Error making request: %v", err)
 	}
 	defer resp.Body.Close()
 
-	// Leer la respuesta del servidor
-	respData, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
-
 	// Verificar el código de estado de la respuesta
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {
-		return fmt.Errorf("respuesta del servidor: %s , %s", resp.Status, respData)
+		return fmt.Errorf("respuesta del servidor: %s", resp.Status)
 	}
 
 	// Imprimir el resultado del servidor
 	if verbose {
-		fmt.Printf("Respuesta del servidor: %s\n", respData)
+		bodyBytes, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			log.Fatal(err)
+		}
+		bodyString := string(bodyBytes)
+		fmt.Printf("Respuesta del servidor: %s\n", bodyString)
 	}
 
 	return nil
