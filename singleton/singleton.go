@@ -3,9 +3,10 @@ package singleton
 var instance *Singleton
 
 type Singleton struct {
-	Fleet  string
-	Userid string
-	Uniqueid string
+	Fleet      string
+	Userid     string
+	Uniqueid   string
+	AvatarIcon string
 }
 
 func GetInstance() *Singleton {
@@ -25,4 +26,8 @@ func (s *Singleton) SetUserid(userid string) {
 
 func (s *Singleton) SetUniqueid(uniqueid string) {
 	s.Uniqueid = uniqueid
+}
+
+func (s *Singleton) SetAvatarIcon(avatarIcon string) {
+	s.AvatarIcon = avatarIcon
 }

@@ -5,6 +5,7 @@ import (
 	// "context"
 	"encoding/json"
 	"fmt"
+
 	// "io"
 	"io/ioutil"
 	"log"
@@ -28,25 +29,26 @@ func CreatePoints(input [][2]float64) []map[string]interface{} {
 
 		obj := map[string]interface{}{
 			"coordinates": map[string]float64{
-				"latitude": lat,
+				"latitude":  lat,
 				"longitude": lon,
 			},
-			"fleet":  s.Fleet,
-			"user_id": s.Userid,
-			"unique_id": s.Uniqueid,
+			"fleet":      s.Fleet,
+			"user_id":    s.Userid,
+			"unique_id":  s.Uniqueid,
 			"fleet_type": "camioneta",
+			"avatar_ico": s.AvatarIcon,
 		}
 		output = append(output, obj)
 	}
-	
-	return output	
+
+	return output
 }
 
 // CreateListOfPoints Crea una lista que mapea las coordenadas a un objeto
 func CreateListOfPoints(input [][][2]float64) []map[string]interface{} {
 	output := make([]map[string]interface{}, 0)
 	s := singleton.GetInstance()
-	
+
 	for _, fila := range input {
 		for _, pair := range fila {
 			lat := pair[1]
@@ -54,13 +56,14 @@ func CreateListOfPoints(input [][][2]float64) []map[string]interface{} {
 
 			obj := map[string]interface{}{
 				"coordinates": map[string]float64{
-					"latitude": lat,
+					"latitude":  lat,
 					"longitude": lon,
 				},
-				"fleet":  s.Fleet,
-				"user_id": s.Userid,
-				"unique_id": s.Uniqueid,
+				"fleet":      s.Fleet,
+				"user_id":    s.Userid,
+				"unique_id":  s.Uniqueid,
 				"fleet_type": "camioneta",
+				"avatar_ico": s.AvatarIcon,
 			}
 			output = append(output, obj)
 		}
@@ -117,7 +120,7 @@ func PrintMatrix(matrix [][][2]float64) {
 	fmt.Println("]")
 }
 
-//create a function that take a orb.linestring and return the numbers of segments
+// create a function that take a orb.linestring and return the numbers of segments
 func GetSegmentCount(coordinates orb.LineString) int {
 	return len(coordinates) - 1
 }

@@ -22,43 +22,42 @@ import (
 )
 
 func readFileIntoByteSlice(filename string) ([]byte, error) {
-    return ioutil.ReadFile(filename)
+	return ioutil.ReadFile(filename)
 }
-
-
 
 func main() {
 
 	ciclicoPtr := flag.Bool("ciclico", false, "procesar el geojson de forma ciclica")
 	fleetPtr := flag.String("fleet", "", "avatar")
 	geojsonPtr := flag.String("json", "", "archivo geojson para procesar")
-    puntosPtr := flag.Int("puntos", 3, "numero de puntos por segmento de linea")
+	iconPtr := flag.String("icon", "", "icono del avatar")
+	puntosPtr := flag.Int("puntos", 3, "numero de puntos por segmento de linea")
 	uniqueidPtr := flag.String("uniqueid", "", "identificacion unica del usuario")
 	timePtr := flag.Int("pausa", 2000, "tiempo en mili-segundos entre request sucesivos")
-    urlPtr  := flag.String("url", "", "url endpoint para envio de datos")
+	urlPtr := flag.String("url", "", "url endpoint para envio de datos")
 	useridPtr := flag.String("userid", "", "Ggoland/roman")
 	verbosePtr := flag.Bool("verbose", false, "verbose")
 	flag.Parse()
-	
-	if (*geojsonPtr == "") {
+
+	if *geojsonPtr == "" {
 		fmt.Println("Uso: send_position -json=<ruta_al_archivo_geojson>")
 		os.Exit(1)
-	} 
+	}
 
 	// URL del servidor donde realizar la solicitud POST
-    if *urlPtr == "" {
-        log.Fatal("Uso: send_position -json=<ruta_al_archivo_geojson> -url=http://localhost:3000")
-    } else {
-        u, err := url.Parse(*urlPtr)
-        if err != nil {
-            log.Fatalf("Error parsing URL: %v", err)
-        }
-        // if !strings.HasSuffix(u.Path, "/") {
-        //     u.Path += "/"
-        // }
-        *urlPtr = u.String()
-    }
-	
+	if *urlPtr == "" {
+		log.Fatal("Uso: send_position -json=<ruta_al_archivo_geojson> -url=http://localhost:3000")
+	} else {
+		u, err := url.Parse(*urlPtr)
+		if err != nil {
+			log.Fatalf("Error parsing URL: %v", err)
+		}
+		// if !strings.HasSuffix(u.Path, "/") {
+		//     u.Path += "/"
+		// }
+		*urlPtr = u.String()
+	}
+
 	if *uniqueidPtr == "" {
 		uuidWithHyphen := uuid.New()
 		uuid := strings.Replace(uuidWithHyphen.String(), "-", "", -1)
@@ -73,10 +72,15 @@ func main() {
 		*fleetPtr = "avatar"
 	}
 
+	if *iconPtr == "" {
+		*iconPtr = "https://icons.iconarchive.com/icons/martz90/hex/48/car-icon.png"
+	}
+
 	s := singleton.GetInstance()
 	s.SetFleet(*fleetPtr)
 	s.SetUserid(*useridPtr)
 	s.SetUniqueid(*uniqueidPtr)
+	s.SetAvatarIcon(*iconPtr)
 
 	// Leer el archivo geojson
 	fmt.Println("Leer archivo geojson...")
@@ -106,18 +110,18 @@ func main() {
 	// Obtener las coordenadas del LineString
 	fmt.Println("Obtener las coordenadas del LineString...")
 	coordinates := feature.Features[0].Geometry.(orb.LineString)
-    // procesando el archivo geojson
+	// procesando el archivo geojson
 	fmt.Println("Procesando archivo geojson...")
 	inputVector := helpers.ExtraeSegmentos(coordinates)
 	output := helpers.SubsampleVector(inputVector)
 	fmt.Printf("Subdividiendo segmentos...\n")
 	newpoints := geometry.GeneratePoints(output, *puntosPtr, 3.0)
-	fmt.Println("Total coordenadas a procesar: ", len(newpoints) * *puntosPtr)
+	fmt.Println("Total coordenadas a procesar: ", len(newpoints)**puntosPtr)
 	outpuLonLat := geometry.ConverToLonLat(newpoints)
 	//helpers.PrintMatrix(outpuLonLat)
 
 	if *ciclicoPtr {
-	    fmt.Println("Enviando coordenadas de forma ciclica...")
+		fmt.Println("Enviando coordenadas de forma ciclica...")
 		iterator := helpers.NewCircularIterator(outpuLonLat)
 		// Ejemplo de uso en un ciclo infinito
 		for {
@@ -169,4 +173,3 @@ func main() {
 	}
 
 }
-
