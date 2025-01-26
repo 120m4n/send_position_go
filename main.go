@@ -4,35 +4,38 @@ import (
 	"context"
 	"errors"
 	"flag"
-	"fmt"
-	"io/ioutil"
+	// "fmt"
+	// "io/ioutil"
 	"log"
 	"net/url"
 	"os"
+    "os/signal"
+    "syscall"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/paulmach/orb"
-	"github.com/paulmach/orb/geojson"
+	// "github.com/paulmach/orb"
+	// "github.com/paulmach/orb/geojson"
 
-	"send_position/geometry"
+	// "send_position/geometry"
 	"send_position/helpers"
 	"send_position/singleton"
 )
 
-func readFileIntoByteSlice(filename string) ([]byte, error) {
-    return ioutil.ReadFile(filename)
-}
+// func readFileIntoByteSlice(filename string) ([]byte, error) {
+//     return ioutil.ReadFile(filename)
+// }
 
 
 
 func main() {
 
-	ciclicoPtr := flag.Bool("ciclico", false, "procesar el geojson de forma ciclica")
+	latPtr := flag.Float64("lat", 7.1299, "latitude")
+    lonPtr := flag.Float64("lon", -73.111929, "longitude")
 	fleetPtr := flag.String("fleet", "", "avatar")
-	geojsonPtr := flag.String("json", "", "archivo geojson para procesar")
-    puntosPtr := flag.Int("puntos", 3, "numero de puntos por segmento de linea")
+	// geojsonPtr := flag.String("json", "", "archivo geojson para procesar")
+    puntosPtr := flag.Int("puntos", 113, "numero de puntos por segmento de linea")
 	uniqueidPtr := flag.String("uniqueid", "", "identificacion unica del usuario")
 	timePtr := flag.Int("pausa", 2000, "tiempo en mili-segundos entre request sucesivos")
     urlPtr  := flag.String("url", "", "url endpoint para envio de datos")
@@ -40,10 +43,6 @@ func main() {
 	verbosePtr := flag.Bool("verbose", false, "verbose")
 	flag.Parse()
 	
-	if (*geojsonPtr == "") {
-		fmt.Println("Uso: send_position -json=<ruta_al_archivo_geojson>")
-		os.Exit(1)
-	} 
 
 	// URL del servidor donde realizar la solicitud POST
     if *urlPtr == "" {
@@ -78,95 +77,45 @@ func main() {
 	s.SetUserid(*useridPtr)
 	s.SetUniqueid(*uniqueidPtr)
 
-	// Leer el archivo geojson
-	fmt.Println("Leer archivo geojson...")
-	rawJSON, err := readFileIntoByteSlice(*geojsonPtr)
-	if err != nil {
-		log.Fatalf("Error al leer el archivo geojson: %v", err)
-	}
+	// Create a channel to receive OS signals
+	sigs := make(chan os.Signal, 1)
 
-	// Parsear el archivo geojson
-	fmt.Println("Parsear archivo geojson...")
-	feature, err := geojson.UnmarshalFeatureCollection(rawJSON)
-	if err != nil {
-		log.Fatalf("Error al parsear el archivo geojson: %v", err)
-	}
+	// Register the channel to receive SIGINT and SIGTERM signals
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
-	// Verificar si la feature es del tipo LineString
-	fmt.Println("Verificar si la feature es del tipo LineString...")
-	if feature.Features[0].Geometry.GeoJSONType() != geojson.TypeLineString {
-		fmt.Println("El archivo geojson no contiene un elemento LineString")
-		os.Exit(1)
-	}
+	// Create a channel to signal when the program should exit
+	done := make(chan bool, 1)
 
-	//Contar el numero de segmentos en el LineString
-	segmentCount := helpers.GetSegmentCount(feature.Features[0].Geometry.(orb.LineString))
-	fmt.Printf("Numero de segmentos encontrados: %d\n", segmentCount)
+	// Start a goroutine that will set done to true when a signal is received
+	go func() {
+		sig := <-sigs
+		log.Printf("Received signal: %v", sig)
+		done <- true
+	}()
 
-	// Obtener las coordenadas del LineString
-	fmt.Println("Obtener las coordenadas del LineString...")
-	coordinates := feature.Features[0].Geometry.(orb.LineString)
-    // procesando el archivo geojson
-	fmt.Println("Procesando archivo geojson...")
-	inputVector := helpers.ExtraeSegmentos(coordinates)
-	output := helpers.SubsampleVector(inputVector)
-	fmt.Printf("Subdividiendo segmentos...\n")
-	newpoints := geometry.GeneratePoints(output, *puntosPtr, 3.0)
-	fmt.Println("Total coordenadas a procesar: ", len(newpoints) * *puntosPtr)
-	outpuLonLat := geometry.ConverToLonLat(newpoints)
-	//helpers.PrintMatrix(outpuLonLat)
 
-	if *ciclicoPtr {
-	    fmt.Println("Enviando coordenadas de forma ciclica...")
-		iterator := helpers.NewCircularIterator(outpuLonLat)
-		// Ejemplo de uso en un ciclo infinito
-		for {
-			currentData := iterator.Next()
-			if currentData == nil {
-				break // Salir del ciclo si no hay datos
-			}
+    // Iterate from 0 to *puntosPtr, generate a CreateRandomPoint(-73,12) 
+    // and send each element to the EnviarPOST function
+    for i := 0; i < *puntosPtr; i++ {
+        select {
+        case <-done:
+            log.Println("Exiting due to interrupt signal")
+            return
+        default:
+            elem := helpers.CreateRandomPoint(*lonPtr, *latPtr)
 
-			// Procesar los datos actuales
-			// for _, pair := range currentData {
-			// 	fmt.Printf("(%f, %f) ", pair[0], pair[1])
-			// }
-			// fmt.Println()
-			result := helpers.CreatePoints(currentData)
-			// Iterar sobre result y enviar cada elemento a la función enviarPOST
-			for _, elem := range result {
-				err := helpers.EnviarPOST(*urlPtr, elem, *verbosePtr)
-				if err != nil {
-					if errors.Is(err, context.DeadlineExceeded) {
-						log.Println("Request timed out, retrying with a longer deadline...")
-					} else {
-						log.Printf("Error al enviar el elemento: %v\n", err)
-					}
-				}
+            err := helpers.EnviarPOST(*urlPtr, elem, *verbosePtr)
+            if err != nil {
+                if errors.Is(err, context.DeadlineExceeded) {
+                    log.Println("Request timed out, retrying with a longer deadline...")
+                } else {
+                    log.Printf("Error al enviar el elemento: %v\n", err)
+                }
+            }
 
-				// Esperar el tiempo configurado antes de la siguiente solicitud
-				time.Sleep(time.Duration(*timePtr) * time.Millisecond)
-			}
-		}
-	} else {
-		fmt.Println("Enviando coordenadas de forma secuencial...")
-		result := helpers.CreateListOfPoints(outpuLonLat)
-
-		// Iterar sobre result y enviar cada elemento a la función enviarPOST
-
-		for _, elem := range result {
-			err := helpers.EnviarPOST(*urlPtr, elem, *verbosePtr)
-			if err != nil {
-				if errors.Is(err, context.DeadlineExceeded) {
-					log.Println("Request timed out, retrying with a longer deadline...")
-				} else {
-					log.Printf("Error al enviar el elemento: %v\n", err)
-				}
-			}
-
-			// Esperar el tiempo configurado antes de la siguiente solicitud
-			time.Sleep(time.Duration(*timePtr) * time.Millisecond)
-		}
-	}
-
+            // Wait the configured time before the next request
+            time.Sleep(time.Duration(*timePtr) * time.Millisecond)
+        }
+    }
 }
 

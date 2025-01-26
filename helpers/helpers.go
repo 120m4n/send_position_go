@@ -11,11 +11,63 @@ import (
 	"send_position/singleton"
 
 	"net/http"
-	//"time"
+	"math"
+	"math/rand"
 
 	"github.com/go-spatial/proj"
 	"github.com/paulmach/orb"
 )
+
+
+type Point struct {
+	X float64
+	Y float64
+}
+
+func RandomPointInCircle(centerLon float64, centerLat float64, radiusInMeters float64) Point {
+    // Convert radius from meters to degrees
+    radiusInDegrees := radiusInMeters / 111139.0
+
+    // Generate a random angle
+    angle := rand.Float64() * 2 * math.Pi
+
+    // Generate a random radius within the circle's radius
+    r := radiusInDegrees * math.Sqrt(rand.Float64())
+
+    // Calculate the coordinates of the random point
+    deltaLon := r * math.Cos(angle)
+    deltaLat := r * math.Sin(angle)
+
+    // Add deltas to the center coordinates
+    lon := centerLon + deltaLon
+    lat := centerLat + deltaLat
+
+    return Point{lon, lat}
+}
+
+//given a pair lon, lat coordinates , return a map[string]interface{} object
+// in the circle around point at radius 100m
+
+func CreateRandomPoint(longitude float64, latitude float64 ) map[string]interface{} {
+	s := singleton.GetInstance()
+	/// define temp like a cicle with center longitude, latitude pair and radious 100 meters
+	temp := RandomPointInCircle(longitude, latitude, 100)
+
+
+	obj := map[string]interface{}{
+		"coordinates": map[string]float64{
+			"latitude": temp.Y,
+			"longitude": temp.X,
+		},
+		"fleet":  s.Fleet,
+		"user_id": s.Userid,
+		"unique_id": s.Uniqueid,
+		"fleet_type": "car",
+	}
+
+	return obj
+
+}
 
 func CreatePoints(input [][2]float64) []map[string]interface{} {
 	output := make([]map[string]interface{}, 0)

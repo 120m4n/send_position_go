@@ -11,14 +11,14 @@
             "mode": "auto",
             "program": "${fileDirname}",
             "args": [
-                "-json=./test/trazado_1.json",
-                "-url=http://localhost:3002/coordinates/",
+                "-lat=7.128252",
+                "-lon=-73.118090",
+                "-url=https://geofences.mapas-electrosoftware.xyz/coordinates/",
                 "-fleet=avatar",
                 "-userid=G12/mac",
                 "-pausa=3000",
-                "-ciclico=false",
                 "-verbose=true",
-                "-puntos=67"
+                "-puntos=7"
             ]
         }
     ]
